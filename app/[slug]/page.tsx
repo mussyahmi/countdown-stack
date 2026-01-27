@@ -1,72 +1,93 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import DashboardView from "@/components/dashboard-view";
 import { Dashboard, Event } from "@/lib/types";
+import { Loader2 } from "lucide-react";
 
-async function getDashboard(slug: string) {
-  const dashboardsRef = collection(db, "dashboards");
-  const querySnapshot = await getDocs(dashboardsRef);
+export default function DashboardPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+  
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  let dashboardData = null;
-  let dashboardId = null;
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        // Get dashboard by slug
+        const dashboardsRef = collection(db, "dashboards");
+        const q = query(dashboardsRef, where("slug", "==", slug));
+        const querySnapshot = await getDocs(q);
 
-  querySnapshot.forEach((doc) => {
-    if (doc.data().slug === slug) {
-      dashboardData = { id: doc.id, ...doc.data() };
-      dashboardId = doc.id;
+        if (querySnapshot.empty) {
+          setNotFound(true);
+          setIsLoading(false);
+          return;
+        }
+
+        const dashboardDoc = querySnapshot.docs[0];
+        const dashboardData = {
+          id: dashboardDoc.id,
+          ...dashboardDoc.data(),
+          createdAt: dashboardDoc.data().createdAt.toDate(),
+          updatedAt: dashboardDoc.data().updatedAt.toDate(),
+          lastActivityAt: dashboardDoc.data().lastActivityAt.toDate(),
+        } as Dashboard;
+
+        setDashboard(dashboardData);
+
+        // Get events
+        const eventsRef = collection(db, "dashboards", dashboardDoc.id, "events");
+        const eventsSnapshot = await getDocs(eventsRef);
+
+        const eventsData: Event[] = [];
+        eventsSnapshot.forEach((doc) => {
+          eventsData.push({
+            id: doc.id,
+            ...doc.data(),
+            date: doc.data().date.toDate(),
+            createdAt: doc.data().createdAt.toDate(),
+          } as Event);
+        });
+
+        eventsData.sort((a, b) => a.date.getTime() - b.date.getTime());
+        setEvents(eventsData);
+      } catch (error) {
+        console.error("Error fetching dashboard:", error);
+        setNotFound(true);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  });
 
-  if (!dashboardData || !dashboardId) {
-    return null;
+    fetchDashboard();
+  }, [slug]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-20 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
-  // Get events
-  const eventsRef = collection(db, "dashboards", dashboardId, "events");
-  const eventsSnapshot = await getDocs(eventsRef);
-
-  const events: Event[] = [];
-  eventsSnapshot.forEach((doc) => {
-    events.push({
-      id: doc.id,
-      ...doc.data(),
-      date: doc.data().date.toDate(),
-      createdAt: doc.data().createdAt.toDate(),
-    } as Event);
-  });
-
-  // Sort events by date
-  events.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  return {
-    dashboard: {
-      ...(dashboardData as any),
-      createdAt: (dashboardData as any).createdAt.toDate(),
-      updatedAt: (dashboardData as any).updatedAt.toDate(),
-      lastActivityAt: (dashboardData as any).lastActivityAt.toDate(),
-    } as Dashboard,
-    events,
-  };
-}
-
-export default async function DashboardPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-
-  const data = await getDashboard(slug);
-
-  if (!data) {
-    notFound();
+  if (notFound || !dashboard) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <h1 className="text-4xl font-bold mb-4">404</h1>
+        <h2 className="text-xl mb-4">Dashboard Not Found</h2>
+        <p className="text-muted-foreground">
+          The dashboard you're looking for doesn't exist or has been deleted.
+        </p>
+      </div>
+    );
   }
 
-  return (
-    <DashboardView
-      dashboard={data.dashboard}
-      initialEvents={data.events}
-    />
-  );
+  return <DashboardView dashboard={dashboard} initialEvents={events} />;
 }
