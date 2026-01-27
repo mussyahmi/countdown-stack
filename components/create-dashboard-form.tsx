@@ -114,7 +114,7 @@ export default function CreateDashboardForm() {
                 <FormItem>
                   <FormLabel>Dashboard Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="My Events 2024" {...field} />
+                    <Input placeholder="My Events 2026" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
