@@ -47,7 +47,7 @@ export default function Navbar() {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild>
                   <Link href="/explore" className="w-full cursor-pointer">
-                    Explore Dashboards
+                    Explore
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

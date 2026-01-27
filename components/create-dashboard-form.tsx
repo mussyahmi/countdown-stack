@@ -115,7 +115,7 @@ export default function CreateDashboardForm() {
                 <FormItem>
                   <FormLabel>Dashboard Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="My Events 2026" {...field} />
+                    <Input placeholder={`My Events ${new Date().getFullYear()}`} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
