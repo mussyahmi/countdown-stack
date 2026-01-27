@@ -14,7 +14,6 @@ interface ExploreViewProps {
 export default function ExploreView({ initialDashboards }: ExploreViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter dashboards by search query
   const filteredDashboards = useMemo(() => {
     if (!searchQuery.trim()) return initialDashboards;
 
@@ -27,9 +26,13 @@ export default function ExploreView({ initialDashboards }: ExploreViewProps) {
     );
   }, [initialDashboards, searchQuery]);
 
-  // Sort by trending (view count)
+  // Sort by trending score (recent activity weighted)
   const trendingDashboards = useMemo(() => {
-    return [...filteredDashboards].sort((a, b) => b.viewCount - a.viewCount);
+    return [...filteredDashboards].sort((a, b) => {
+      const scoreA = a.trendingScore || 0;
+      const scoreB = b.trendingScore || 0;
+      return scoreB - scoreA;
+    });
   }, [filteredDashboards]);
 
   // Sort by newest (creation date)
@@ -41,15 +44,13 @@ export default function ExploreView({ initialDashboards }: ExploreViewProps) {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">Explore Dashboards</h1>
         <p className="text-muted-foreground text-lg">
-          Discover countdown timers created by the community
+          Discover trending countdown timers created by the community
         </p>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -63,7 +64,6 @@ export default function ExploreView({ initialDashboards }: ExploreViewProps) {
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="trending" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="trending" className="gap-2">
@@ -76,7 +76,6 @@ export default function ExploreView({ initialDashboards }: ExploreViewProps) {
           </TabsTrigger>
         </TabsList>
 
-        {/* Trending Tab */}
         <TabsContent value="trending">
           {trendingDashboards.length === 0 ? (
             <div className="text-center py-12">
@@ -95,7 +94,6 @@ export default function ExploreView({ initialDashboards }: ExploreViewProps) {
           )}
         </TabsContent>
 
-        {/* Newest Tab */}
         <TabsContent value="newest">
           {newestDashboards.length === 0 ? (
             <div className="text-center py-12">
@@ -115,7 +113,6 @@ export default function ExploreView({ initialDashboards }: ExploreViewProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Stats */}
       {filteredDashboards.length > 0 && (
         <div className="mt-8 text-center text-sm text-muted-foreground">
           Showing {filteredDashboards.length} public {filteredDashboards.length === 1 ? "dashboard" : "dashboards"}

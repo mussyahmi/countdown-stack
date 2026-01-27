@@ -9,6 +9,7 @@ export interface Dashboard {
   updatedAt: Date;
   lastActivityAt: Date;
   viewCount: number;
+  trendingScore: number;
 }
 
 export interface Event {

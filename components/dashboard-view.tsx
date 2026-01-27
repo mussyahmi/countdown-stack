@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Lock, Plus, Settings, Share2, Calendar, Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Lock, Plus, Settings, Share2, Calendar, Eye, MoreVertical, Pencil, Trash2, TrendingUp } from "lucide-react";
 import CountdownTimer from "@/components/countdown-timer";
 import AddEventDialog from "@/components/add-event-dialog";
 import PasswordDialog from "@/components/password-dialog";
@@ -29,7 +29,8 @@ import DashboardSettingsDialog from "@/components/dashboard-settings-dialog";
 import PrivateDashboardDialog from "@/components/private-dashboard-dialog";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase";
-import { doc, updateDoc, increment, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, deleteDoc, increment } from "firebase/firestore";
+import { logView, shouldCountView } from "@/lib/trending";
 
 interface DashboardViewProps {
   dashboard: Dashboard;
@@ -47,21 +48,18 @@ export default function DashboardView({ dashboard, initialEvents }: DashboardVie
   const [deletingEvent, setDeletingEvent] = useState<Event | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Track view count on mount
+  // Track view with trending score
   useEffect(() => {
     const trackView = async () => {
-      const viewKey = `viewed_${dashboard.id}`;
-      const lastViewed = sessionStorage.getItem(viewKey);
-      const now = Date.now();
-
-      // If not viewed in this session, or last view was more than 30 minutes ago
-      if (!lastViewed || now - parseInt(lastViewed) > 30 * 60 * 1000) {
+      if (shouldCountView(dashboard.id)) {
         try {
+          // Log view and update trending score
+          await logView(dashboard.id);
+
+          // Also increment total view count
           await updateDoc(doc(db, "dashboards", dashboard.id), {
             viewCount: increment(1),
-            lastActivityAt: new Date(),
           });
-          sessionStorage.setItem(viewKey, now.toString());
         } catch (error) {
           console.error("Error tracking view:", error);
         }
@@ -92,7 +90,6 @@ export default function DashboardView({ dashboard, initialEvents }: DashboardVie
       setShowPasswordDialog(true);
       return;
     }
-    console.log("Editing event:", event);
     setEditingEvent(event);
     setShowAddEventDialog(true);
   };
@@ -112,7 +109,6 @@ export default function DashboardView({ dashboard, initialEvents }: DashboardVie
     try {
       await deleteDoc(doc(db, "dashboards", dashboard.id, "events", deletingEvent.id));
 
-      // Update dashboard lastActivityAt
       await updateDoc(doc(db, "dashboards", dashboard.id), {
         lastActivityAt: new Date(),
       });
@@ -186,7 +182,6 @@ END:VCALENDAR`;
     URL.revokeObjectURL(url);
   };
 
-  // Show private dialog if dashboard is private and not authenticated
   if (showPrivateDialog) {
     return (
       <PrivateDashboardDialog
@@ -236,6 +231,10 @@ END:VCALENDAR`;
             <Eye className="h-4 w-4" />
             {dashboard.viewCount} views
           </div>
+          <div className="flex items-center gap-1">
+            <TrendingUp className="h-4 w-4" />
+            {dashboard.trendingScore || 0} trending score
+          </div>
           <div>
             {events.length} {events.length === 1 ? "event" : "events"}
           </div>
@@ -269,7 +268,6 @@ END:VCALENDAR`;
                 <CardTitle className="flex items-center justify-between">
                   <span className="truncate pr-2">{event.title}</span>
 
-                  {/* Edit/Delete Menu - Only show if authenticated */}
                   {isAuthenticated && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -286,7 +284,7 @@ END:VCALENDAR`;
                           onClick={() => handleDeleteEvent(event)}
                           className="text-destructive focus:text-destructive"
                         >
-                          <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                          <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -300,7 +298,6 @@ END:VCALENDAR`;
               <CardContent className="space-y-4">
                 <CountdownTimer targetDate={event.date} />
 
-                {/* Calendar Export Buttons */}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -342,11 +339,9 @@ END:VCALENDAR`;
         editEvent={editingEvent}
         onEventAdded={(newEvent) => {
           if (editingEvent) {
-            // Update existing event
             setEvents(events.map(e => e.id === newEvent.id ? newEvent : e)
               .sort((a, b) => a.date.getTime() - b.date.getTime()));
           } else {
-            // Add new event
             setEvents([...events, newEvent].sort((a, b) =>
               a.date.getTime() - b.date.getTime()
             ));
@@ -361,7 +356,6 @@ END:VCALENDAR`;
         dashboard={dashboard}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingEvent} onOpenChange={() => setDeletingEvent(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -83,6 +83,7 @@ export default function CreateDashboardForm() {
         updatedAt: new Date(),
         lastActivityAt: new Date(),
         viewCount: 0,
+        trendingScore: 0,
       });
 
       toast.success("Dashboard created!", {
