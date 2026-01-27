@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/navbar";
 import FeedbackWidget from "@/components/feedback-widget";
 import { ThemeProvider } from "next-themes";
+import { APP_VERSION } from "@/lib/version";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,6 +49,11 @@ export default function RootLayout({
             data-y_margin="18"
           ></script>
         </ThemeProvider>
+
+        {/* Add some space for the buy me a coffee widget and display version */}
+        <div className="h-24 text-muted-foreground text-sm flex items-end justify-center pb-4">
+          v{APP_VERSION}
+        </div>
       </body>
     </html>
   );

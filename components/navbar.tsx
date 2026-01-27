@@ -18,9 +18,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <Clock className="h-6 w-6" />
-            <span className="hidden sm:inline">CountdownStack</span>
-            <span className="sm:hidden">CS</span>
+            <span>CountdownStack</span>
           </Link>
 
           {/* Desktop Navigation */}
