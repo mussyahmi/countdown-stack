@@ -202,7 +202,14 @@ export default function DashboardSettingsDialog({
                   <h4 className="text-sm font-semibold">Dashboard Info</h4>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <p>Slug: <span className="font-mono">{dashboard.slug}</span></p>
-                    <p>Created: {dashboard.createdAt.toLocaleDateString()}</p>
+                    <p>Created: {dashboard.createdAt.toLocaleString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    }).replace(/am|pm/, match => match.toUpperCase())}</p>
                     <p>Views: {dashboard.viewCount}</p>
                   </div>
                 </div>
@@ -288,7 +295,14 @@ export default function DashboardSettingsDialog({
                 <h4 className="text-sm font-semibold">⚠️ Auto-Deletion Notice</h4>
                 <p className="text-sm text-muted-foreground">
                   Dashboards inactive for 90 days will be automatically deleted.
-                  Last activity: {dashboard.lastActivityAt.toLocaleDateString()}
+                  Last activity: {dashboard.lastActivityAt.toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  }).replace(/am|pm/, match => match.toUpperCase())}
                 </p>
               </div>
             </TabsContent>

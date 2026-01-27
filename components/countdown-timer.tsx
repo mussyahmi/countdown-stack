@@ -73,14 +73,15 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
 
           {/* Locale-safe AFTER hydration */}
           <p className="text-sm text-muted-foreground text-center">
-            {targetDate.toLocaleString("en-US", {
+            {targetDate.toLocaleString("en-GB", {
               weekday: "long",
               year: "numeric",
               month: "long",
               day: "numeric",
               hour: "2-digit",
               minute: "2-digit",
-            })}
+              hour12: true,
+            }).replace(/am|pm/, match => match.toUpperCase())}
           </p>
         </>
       )}
