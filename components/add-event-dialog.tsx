@@ -288,7 +288,6 @@ export default function AddEventDialog({
                   <FormControl>
                     <Input type="time" {...field} />
                   </FormControl>
-                  <FormDescription>24-hour format (HH:MM)</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
