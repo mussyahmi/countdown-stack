@@ -10,17 +10,22 @@ import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
   const params = useParams();
-  const slug = params.slug as string;
-  
+  const slug = params?.slug; // ✅ safe access
+
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    if (!slug) {
+      // If slug is not yet available, do nothing
+      return;
+    }
+
     async function fetchDashboard() {
       try {
-        // Get dashboard by slug
+        // Fetch dashboard by slug
         const dashboardsRef = collection(db, "dashboards");
         const q = query(dashboardsRef, where("slug", "==", slug));
         const querySnapshot = await getDocs(q);
@@ -32,17 +37,17 @@ export default function DashboardPage() {
         }
 
         const dashboardDoc = querySnapshot.docs[0];
-        const dashboardData = {
+        const dashboardData: Dashboard = {
+          ...(dashboardDoc.data() as Dashboard),
           id: dashboardDoc.id,
-          ...dashboardDoc.data(),
           createdAt: dashboardDoc.data().createdAt.toDate(),
           updatedAt: dashboardDoc.data().updatedAt.toDate(),
           lastActivityAt: dashboardDoc.data().lastActivityAt.toDate(),
-        } as Dashboard;
+        };
 
         setDashboard(dashboardData);
 
-        // Get events
+        // Fetch events
         const eventsRef = collection(db, "dashboards", dashboardDoc.id, "events");
         const eventsSnapshot = await getDocs(eventsRef);
 
@@ -69,7 +74,7 @@ export default function DashboardPage() {
     fetchDashboard();
   }, [slug]);
 
-  if (isLoading) {
+  if (!slug || isLoading) {
     return (
       <div className="container mx-auto px-4 py-20 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
