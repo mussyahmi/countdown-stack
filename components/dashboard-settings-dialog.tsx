@@ -265,7 +265,7 @@ export default function DashboardSettingsDialog({
                       <FormItem>
                         <FormLabel>Dashboard Title</FormLabel>
                         <FormControl>
-                          <Input placeholder="My Events 2025" {...field} />
+                          <Input placeholder={`My Events ${new Date().getFullYear()}`} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -299,7 +299,7 @@ export default function DashboardSettingsDialog({
                         <div className="flex gap-2">
                           <FormControl>
                             <Input
-                              placeholder="my-events-2025"
+                              placeholder={`my-events-${new Date().getFullYear()}`}
                               {...field}
                               className="font-mono"
                             />

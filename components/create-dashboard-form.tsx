@@ -145,7 +145,7 @@ export default function CreateDashboardForm() {
                   <FormLabel>Dashboard Title</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="My Events 2025"
+                      placeholder={`My Events ${new Date().getFullYear()}`}
                       {...field}
                       onChange={(e) => handleTitleChange(e.target.value)}
                     />
@@ -164,7 +164,7 @@ export default function CreateDashboardForm() {
                   <div className="flex gap-2">
                     <FormControl>
                       <Input
-                        placeholder="my-events-2025"
+                        placeholder={`my-events-${new Date().getFullYear()}`}
                         {...field}
                         className="font-mono"
                       />
