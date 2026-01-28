@@ -309,7 +309,7 @@ export default function DashboardSettingsDialog({
                             variant="outline"
                             onClick={handleGenerateSlug}
                           >
-                            Generate
+                            Regenerate
                           </Button>
                         </div>
                         <FormDescription>

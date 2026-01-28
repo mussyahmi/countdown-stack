@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,15 +19,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import bcrypt from "bcryptjs";
 import slugify from "slugify";
-import { toast } from "sonner";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
+  slug: z.string()
+    .min(3, "Slug must be at least 3 characters")
+    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
   isPrivate: z.boolean(),
@@ -38,6 +41,7 @@ const formSchema = z.object({
 
 export default function CreateDashboardForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [baseUrl, setBaseUrl] = useState("");
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -45,36 +49,65 @@ export default function CreateDashboardForm() {
     defaultValues: {
       title: "",
       description: "",
+      slug: "",
       password: "",
       confirmPassword: "",
       isPrivate: false,
     },
   });
 
+  // Get base URL on client side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
+
+  // Auto-generate slug from title
+  function handleGenerateSlug() {
+    const title = form.getValues("title");
+    if (title) {
+      const newSlug = slugify(title, { lower: true, strict: true });
+      form.setValue("slug", newSlug);
+
+      // Trigger validation for the slug field
+      form.trigger("slug");
+    } else {
+      toast.error("Please enter a title first");
+    }
+  }
+
+  // Auto-generate slug when title changes (optional)
+  function handleTitleChange(value: string) {
+    form.setValue("title", value);
+
+    const newSlug = slugify(value, { lower: true, strict: true });
+    form.setValue("slug", newSlug);
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
 
     try {
-      // Generate unique slug
-      let slug = slugify(values.title, { lower: true, strict: true });
-
       // Check if slug exists
       const slugQuery = query(
         collection(db, "dashboards"),
-        where("slug", "==", slug)
+        where("slug", "==", values.slug)
       );
       const slugSnapshot = await getDocs(slugQuery);
 
       if (!slugSnapshot.empty) {
-        slug = `${slug}-${Date.now()}`;
+        toast.error("This slug is already taken. Please choose another one.");
+        setIsLoading(false);
+        return;
       }
 
       // Hash password
       const passwordHash = await bcrypt.hash(values.password, 10);
 
       // Create dashboard
-      const docRef = await addDoc(collection(db, "dashboards"), {
-        slug,
+      await addDoc(collection(db, "dashboards"), {
+        slug: values.slug,
         title: values.title,
         description: values.description || "",
         passwordHash,
@@ -86,15 +119,11 @@ export default function CreateDashboardForm() {
         trendingScore: 0,
       });
 
-      toast.success("Dashboard created!", {
-        description: "Redirecting to your dashboard...",
-      });
-
-      router.push(`/${slug}`);
+      toast.success("Dashboard created!");
+      router.push(`/${values.slug}`);
     } catch (error) {
-      toast.error("Error", {
-        description: "Failed to create dashboard. Please try again.",
-      });
+      console.error("Error creating dashboard:", error);
+      toast.error("Failed to create dashboard. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -115,8 +144,46 @@ export default function CreateDashboardForm() {
                 <FormItem>
                   <FormLabel>Dashboard Title</FormLabel>
                   <FormControl>
-                    <Input placeholder={`My Events ${new Date().getFullYear()}`} {...field} />
+                    <Input
+                      placeholder="My Events 2025"
+                      {...field}
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                    />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dashboard Slug (URL)</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input
+                        placeholder="my-events-2025"
+                        {...field}
+                        className="font-mono"
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGenerateSlug}
+                    >
+                      Regenerate
+                    </Button>
+                  </div>
+                  <FormDescription>
+                    {baseUrl && field.value ? (
+                      <>Your dashboard will be available at: {baseUrl}/{field.value}</>
+                    ) : (
+                      <>Your dashboard URL will appear here</>
+                    )}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
