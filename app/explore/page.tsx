@@ -1,13 +1,12 @@
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import ExploreView from "@/components/explore-view";
 import { Dashboard } from "@/lib/types";
 
-async function getPublicDashboards() {
+async function getAllDashboards() {
   const dashboardsRef = collection(db, "dashboards");
   const q = query(
     dashboardsRef,
-    where("isPrivate", "==", false),
     orderBy("createdAt", "desc")
   );
 
@@ -28,7 +27,7 @@ async function getPublicDashboards() {
 }
 
 export default async function ExplorePage() {
-  const dashboards = await getPublicDashboards();
+  const dashboards = await getAllDashboards();
 
   return <ExploreView initialDashboards={dashboards} />;
 }
